@@ -12,6 +12,7 @@ class PathObjectCache implements PathCacheInterface
 {
 	protected $files=[];
 	protected $completed=[];
+	protected $length=0;
 	protected $maxCacheLength=500;
 	public function __construct()
 	{

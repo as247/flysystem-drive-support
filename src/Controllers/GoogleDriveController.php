@@ -1,18 +1,20 @@
 <?php
 
-
 namespace As247\Flysystem\DriveSupport\Controllers;
 
+use Exception;
+use Google_Client;
+use Google_Service_Drive;
 
 class GoogleDriveController
 {
 	protected $client;
 	public function __construct($clientId,$clientSecret)
 	{
-		$this->client=new \Google_Client();
+		$this->client=new Google_Client();
 		$this->client->setClientId($clientId);
 		$this->client->setClientSecret($clientSecret);
-		$this->client->addScope(\Google_Service_Drive::DRIVE);
+		$this->client->addScope(Google_Service_Drive::DRIVE);
 		$this->client->setAccessType('offline');
 		$this->client->setApprovalPrompt("force");
 		$this->client->setRedirectUri($this->getCurrentUrl());
@@ -20,11 +22,10 @@ class GoogleDriveController
 
 	public function dispatch(){
 		if($code=$this->getCode()){
-			$refreshToken='';
-			try{
+            try{
 				$result=$this->client->fetchAccessTokenWithAuthCode($code);
 				$refreshToken=$result['refresh_token'];
-			}catch (\Exception $e){
+			}catch (Exception $e){
 				$refreshToken=$e->getMessage();
 			}
 			$this->showRefreshToken($refreshToken);

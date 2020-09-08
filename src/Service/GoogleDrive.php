@@ -4,12 +4,10 @@
 namespace As247\Flysystem\DriveSupport\Service;
 
 use As247\Flysystem\DriveSupport\Exception\ApiException;
-use As247\Flysystem\DriveSupport\Exception\UnreadableFileEncountered;
 use As247\Flysystem\DriveSupport\Support\StorageAttributes;
-use As247\Flysystem\GoogleDrive\Util as GdUtil;
+use Google_Http_MediaFileUpload;
 use Google_Service_Drive;
 use Google_Service_Drive_Permission;
-use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Stream;
 use League\Flysystem\AdapterInterface;
 use Psr\Http\Message\RequestInterface;
@@ -391,7 +389,7 @@ class GoogleDrive
 		}
 		$mime=$file->getMimeType();
 		// Create a media file upload to represent our upload process.
-		$media = new \Google_Http_MediaFileUpload($client, $request, $mime, null, true, $chunk);
+		$media = new Google_Http_MediaFileUpload($client, $request, $mime, null, true, $chunk);
 		$media->setFileSize($contents->getSize());
 		// Upload the various chunks. $status will be false until the process is
 		// complete.

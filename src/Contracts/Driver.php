@@ -22,86 +22,109 @@ use League\Flysystem\Config;
 
 interface Driver
 {
-	/**
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @return bool
+     * @throws FilesystemException
+     */
 	public function fileExists(string $path): bool;
 
-	/**
-	 * @throws UnableToWriteFile
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @param string $contents
+     * @param Config $config
+     * @throws UnableToWriteFile
+     * @throws FilesystemException
+     */
 	public function write(string $path, string $contents, Config $config): void;
 
-	/**
-	 * @param resource $contents
-	 * @throws UnableToWriteFile
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @param resource $contents
+     * @param Config $config
+     * @throws UnableToWriteFile
+     * @throws FilesystemException
+     */
 	public function writeStream(string $path, $contents, Config $config): void;
 
-	/**
-	 * @throws UnableToReadFile
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @return string
+     * @throws UnableToReadFile
+     * @throws FilesystemException
+     */
 	public function read(string $path): string;
 
-	/**
-	 * @return resource
-	 * @throws UnableToReadFile
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @return resource
+     * @throws UnableToReadFile
+     * @throws FilesystemException
+     */
 	public function readStream(string $path);
 
-	/**
-	 * @throws UnableToDeleteFile
-	 * @throws FilesystemException
-	 * @throws FileNotFoundException
-	 */
+    /**
+     * @param string $path
+     * @throws UnableToDeleteFile
+     * @throws FilesystemException
+     * @throws FileNotFoundException
+     */
 	public function delete(string $path): void;
 
-	/**
-	 * @throws UnableToDeleteDirectory
-	 * @throws FilesystemException
-	 * @throws FileNotFoundException
-	 */
+    /**
+     * @param string $path
+     * @throws UnableToDeleteDirectory
+     * @throws FilesystemException
+     * @throws FileNotFoundException
+     */
 	public function deleteDirectory(string $path): void;
 
-	/**
-	 * @throws UnableToCreateDirectory
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @param Config $config
+     * @throws UnableToCreateDirectory
+     * @throws FilesystemException
+     */
 	public function createDirectory(string $path, Config $config): void;
 
-	/**
-	 * @param mixed $visibility
-	 * @throws InvalidVisibilityProvided
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @param mixed $visibility
+     * @throws InvalidVisibilityProvided
+     * @throws FilesystemException
+     */
 	public function setVisibility(string $path, $visibility): void;
 
-	/**
-	 * @throws UnableToRetrieveMetadata
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @return FileAttributes
+     * @throws UnableToRetrieveMetadata
+     * @throws FilesystemException
+     */
 	public function visibility(string $path): FileAttributes;
 
-	/**
-	 * @throws UnableToRetrieveMetadata
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @return FileAttributes
+     * @throws UnableToRetrieveMetadata
+     * @throws FilesystemException
+     */
 	public function mimeType(string $path): FileAttributes;
 
-	/**
-	 * @throws UnableToRetrieveMetadata
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @return FileAttributes
+     * @throws UnableToRetrieveMetadata
+     * @throws FilesystemException
+     */
 	public function lastModified(string $path): FileAttributes;
 
-	/**
-	 * @throws UnableToRetrieveMetadata
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $path
+     * @return FileAttributes
+     * @throws UnableToRetrieveMetadata
+     * @throws FilesystemException
+     */
 	public function fileSize(string $path): FileAttributes;
 
 	/**
@@ -112,16 +135,22 @@ interface Driver
 	 */
 	public function listContents(string $path, bool $deep): iterable;
 
-	/**
-	 * @throws UnableToMoveFile
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $source
+     * @param string $destination
+     * @param Config $config
+     * @throws UnableToMoveFile
+     * @throws FilesystemException
+     */
 	public function move(string $source, string $destination, Config $config): void;
 
-	/**
-	 * @throws UnableToCopyFile
-	 * @throws FilesystemException
-	 */
+    /**
+     * @param string $source
+     * @param string $destination
+     * @param Config $config
+     * @throws UnableToCopyFile
+     * @throws FilesystemException
+     */
 	public function copy(string $source, string $destination, Config $config): void;
 
 	/**

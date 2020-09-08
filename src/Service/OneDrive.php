@@ -4,13 +4,13 @@
 namespace As247\Flysystem\DriveSupport\Service;
 
 
+use ArrayObject;
 use As247\Flysystem\DriveSupport\Exception\InvalidStreamProvided;
 use As247\Flysystem\DriveSupport\Support\Path;
 use As247\Flysystem\DriveSupport\Support\StorageAttributes;
 use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
 use Microsoft\Graph\Graph;
-use Psr\Http\Message\ResponseInterface;
 use function GuzzleHttp\Psr7\stream_for;
 
 class OneDrive
@@ -26,9 +26,6 @@ class OneDrive
 	{
 		$this->graph=$graph;
 	}
-
-
-
 
 	function normalizeMetadata(array $response, string $path): array
 	{
@@ -128,7 +125,7 @@ class OneDrive
 		$endpoint=$this->getEndpoint($path);
 		return $this->graph->createRequest('PATCH', $endpoint)
 			->attachBody([
-				'folder' => new \ArrayObject(),
+				'folder' => new ArrayObject(),
 			])->execute()->getBody();
 	}
 

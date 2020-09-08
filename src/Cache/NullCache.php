@@ -25,6 +25,7 @@ class NullCache implements PathCacheInterface
 		if($key==='/'){
 			return $this->root;
 		}
+		return null;
 	}
 
 	public function has($key)
@@ -33,11 +34,12 @@ class NullCache implements PathCacheInterface
 		if($key==='/'){
 			return true;
 		}
+		return false;
 	}
 
 	public function forget($key)
 	{
-		// TODO: Implement forget() method.
+
 	}
 
 	public function forever($key, $value)
@@ -47,26 +49,26 @@ class NullCache implements PathCacheInterface
 
 	public function flush()
 	{
-		// TODO: Implement flush() method.
+
 	}
 
 	public function rename($source, $destination)
 	{
-		// TODO: Implement rename() method.
+
 	}
 
 	public function query($path, $match = '*')
 	{
-		// TODO: Implement query() method.
+
 	}
 
 	public function complete($path, $isCompleted = true)
 	{
-		// TODO: Implement complete() method.
+
 	}
 
 	public function completed($path)
 	{
-		// TODO: Implement completed() method.
+
 	}
 }

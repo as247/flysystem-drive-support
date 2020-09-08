@@ -5,6 +5,7 @@ namespace As247\Flysystem\DriveSupport\Controllers;
 
 
 use As247\Flysystem\DriveSupport\Support\OneDriveOauth;
+use Exception;
 
 class OneDriveController
 {
@@ -18,11 +19,10 @@ class OneDriveController
 	}
 	public function dispatch(){
 		if($code=$this->getCode()){
-			$refreshToken='';
 			try{
 				$result=$this->oauth->fetchAccessTokenWithAuthCode($code);
 				$refreshToken=$result['refresh_token'];
-			}catch (\Exception $e){
+			}catch (Exception $e){
 				$refreshToken=$e->getMessage();
 			}
 			$this->showRefreshToken($refreshToken);

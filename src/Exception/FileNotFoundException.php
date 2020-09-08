@@ -6,6 +6,7 @@ namespace As247\Flysystem\DriveSupport\Exception;
 
 use League\Flysystem\FilesystemException;
 use Exception;
+use Throwable;
 
 class FileNotFoundException extends Exception implements FilesystemException
 {
@@ -21,7 +22,7 @@ class FileNotFoundException extends Exception implements FilesystemException
 	 * @param int        $code
 	 * @param \Exception $previous
 	 */
-	public function __construct($path, $code = 0, \Throwable $previous = null)
+	public function __construct($path, $code = 0, Throwable $previous = null)
 	{
 		if(!is_string($path)){
 			$path=json_encode($path);
