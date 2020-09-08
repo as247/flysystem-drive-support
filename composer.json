@@ -1,0 +1,25 @@
+{
+  "name": "as247/flysystem-drive-support",
+  "description": "Helper for google drive and one drive",
+  "keywords": ["php", "storage", "drive","google","google drive","one drive"],
+  "homepage": "https://github.com/as247",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "As247",
+      "email": "as247@vui360.com",
+      "homepage": "http://as247.vui360.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.1",
+    "ext-json": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "As247\\Flysystem\\DriveSupport\\": "src/"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
