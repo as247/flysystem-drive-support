@@ -17,6 +17,7 @@ use As247\Flysystem\DriveSupport\Exception\UnableToMoveFile;
 use As247\Flysystem\DriveSupport\Exception\UnableToCopyFile;
 use As247\Flysystem\DriveSupport\Support\FileAttributes;
 use As247\Flysystem\DriveSupport\Support\StorageAttributes;
+use Psr\Http\Message\StreamInterface;
 
 use League\Flysystem\Config;
 
@@ -40,7 +41,7 @@ interface Driver
 
     /**
      * @param string $path
-     * @param resource $contents
+     * @param resource|StreamInterface $contents
      * @param Config $config
      * @throws UnableToWriteFile
      * @throws FilesystemException
