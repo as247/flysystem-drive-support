@@ -74,7 +74,6 @@ class GoogleDrive
 	public function __construct(Google_Service_Drive $service,$options=[])
 	{
 		$this->service=$service;
-		print_r($options);
 		$this->logger=new Logger($options['logging']['dir']??'');
 		if(isset($options['logging']['enable'])){
             $this->logger->enable($options['logging']['enable']);
