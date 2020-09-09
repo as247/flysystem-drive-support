@@ -17,10 +17,20 @@ class Logger
     }
 
     function log($message, $level='debug'){
+	    if(!$this->enabled){
+	        return $this;
+        }
+	    if(is_array($message) || is_object($message)){
+	        $message=json_encode($message,JSON_PRETTY_PRINT);
+        }
 		$this->write("[$level] $message",'debug');
+	    return $this;
 	}
 
 	function query($cmd, $query){
+	    if(!$this->enabled){
+	        return $this;
+        }
         $query=json_encode($query,JSON_PRETTY_PRINT);
         $this->write("{$cmd} $query",'query');
 		return $this;
