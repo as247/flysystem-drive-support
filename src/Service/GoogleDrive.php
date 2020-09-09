@@ -70,7 +70,7 @@ class GoogleDrive
 	protected $additionalFields;
 	protected $defaultParams;
 	protected $service;
-	protected $logger;
+	use HasLogger;
 	public function __construct(Google_Service_Drive $service,$options=[])
 	{
 		$this->service=$service;
@@ -258,10 +258,10 @@ class GoogleDrive
 				}
 			}
 		}
-
 		$client->setUseBatch(false);
-		$timerStop=microtime(true)-$timerStart;
-		$this->logQuery('files.list.batch',['query'=>'find for '.$name.' in '.$parent,'duration'=>$timerStop]);
+		$this->logQuery('files.list.batch',[
+		    'query'=>'find for '.$name.' in '.$parent,
+            'duration'=>microtime(true)-$timerStart]);
 		$list=new Google_Service_Drive_FileList();
 		$list->setFiles($files);
 		return [$list,$isFullResult];
@@ -472,12 +472,6 @@ class GoogleDrive
 	protected function logQuery($cmd,$query){
 		$this->logger->query($cmd,$query);
 	}
-    public function getLogger(){
-        return $this->logger;
-    }
-    public function setLogger($logger){
-        $this->logger=$logger;
-        return $this;
-    }
+
 
 }

@@ -8,8 +8,10 @@ use ArrayObject;
 use As247\Flysystem\DriveSupport\Exception\InvalidStreamProvided;
 use As247\Flysystem\DriveSupport\Support\Path;
 use As247\Flysystem\DriveSupport\Support\StorageAttributes;
+use Generator;
+use GuzzleHttp\Psr7\Stream;
 use League\Flysystem\AdapterInterface;
-use League\Flysystem\Config;
+use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
 use function GuzzleHttp\Psr7\stream_for;
 
@@ -22,9 +24,11 @@ class OneDrive
 		'scope' => 'anonymous',
 		'withLink' => true
 	];
-	public function __construct(Graph $graph)
+	protected $options;
+	public function __construct(Graph $graph,$options=[])
 	{
-		$this->graph=$graph;
+		$this->options=$options;
+	    $this->graph=$graph;
 	}
 
 	function normalizeMetadata(array $response, string $path): array
@@ -94,7 +98,7 @@ class OneDrive
 	 * @param $path
 	 * @param $newPath
 	 * @return array|null
-	 * @throws \Microsoft\Graph\Exception\GraphException
+	 * @throws GraphException
 	 */
 	public function copy($path,$newPath){
 		$endpoint = $this->getEndpoint($path,'copy');
@@ -115,7 +119,7 @@ class OneDrive
 	/**
 	 * @param $path
 	 * @return array|null
-	 * @throws \Microsoft\Graph\Exception\GraphException
+	 * @throws GraphException
 	 */
 	public function createDirectory($path){
 		$path=Path::clean($path);
@@ -132,7 +136,7 @@ class OneDrive
 	/**
 	 * @param $path
 	 * @return array|null
-	 * @throws \Microsoft\Graph\Exception\GraphException
+	 * @throws GraphException
 	 */
 	public function delete($path){
 		$endpoint=$this->getEndpoint($path);
@@ -143,7 +147,7 @@ class OneDrive
 	 * @param $path
 	 * @param null $format
 	 * @return resource|null
-	 * @throws \Microsoft\Graph\Exception\GraphException
+	 * @throws GraphException
 	 */
 	public function download($path,$format=null){
 		$args=[];
@@ -157,7 +161,7 @@ class OneDrive
 		$endpoint=$this->getEndpoint($path,'content',$args);
 		$response=$this->graph->createRequest('GET',$endpoint)->setReturnType('GuzzleHttp\Psr7\Stream')->execute();
 		/**
-		 * @var \GuzzleHttp\Psr7\Stream $response
+		 * @var Stream $response
 		 */
 		return $response->detach();
 
@@ -167,7 +171,7 @@ class OneDrive
 	 * @param $path
 	 * @param array $args
 	 * @return array|null
-	 * @throws \Microsoft\Graph\Exception\GraphException
+	 * @throws GraphException
 	 */
 	public function getItem($path,$args=[]){
 		$endpoint=$this->getEndpoint($path,'',$args);
@@ -177,8 +181,8 @@ class OneDrive
 
 	/**
 	 * @param $path
-	 * @return \Generator
-	 * @throws \Microsoft\Graph\Exception\GraphException
+	 * @return Generator
+	 * @throws GraphException
 	 */
 	public function listChildren($path){
 		$endpoint = $this->getEndpoint($path,'children');
@@ -203,7 +207,7 @@ class OneDrive
 	 * @param $path
 	 * @param $newPath
 	 * @return array|null
-	 * @throws \Microsoft\Graph\Exception\GraphException
+	 * @throws GraphException
 	 */
 	public function move($path,$newPath){
 		$endpoint = $this->getEndpoint($path);
@@ -224,11 +228,10 @@ class OneDrive
 	/**
 	 * @param $path
 	 * @param $contents
-	 * @param Config $config
 	 * @return array|null
-	 * @throws \Microsoft\Graph\Exception\GraphException
+	 * @throws GraphException
 	 */
-	public function upload($path,$contents, Config $config){
+	public function upload($path,$contents){
 		$endpoint = $this->getEndpoint($path,'content');
 
 		if (is_resource($contents)) {
@@ -240,15 +243,27 @@ class OneDrive
 		$this->createDirectory(dirname($path));
 		$stream = stream_for($contents);
 
-		return $response=$this->graph->createRequest('PUT', $endpoint)
+		return $this->graph->createRequest('PUT', $endpoint)
 				->attachBody($stream)
 				->execute()->getBody();
 	}
+
+    /**
+     * @param $path
+     * @return array|mixed
+     * @throws GraphException
+     */
 	public function getPermissions($path){
 		$endpoint=$this->getEndpoint($path,'permissions');
 		$response = $this->graph->createRequest('GET', $endpoint)->execute();
 		return $response->getBody()['value']??[];
 	}
+
+    /**
+     * @param $path
+     * @return array
+     * @throws GraphException
+     */
 	function publish($path){
 		$endpoint=$this->getEndpoint($path,'createLink');
 		$body=['type'=>'view','scope'=>'anonymous'];
@@ -259,7 +274,7 @@ class OneDrive
 
 	/**
 	 * @param $path
-	 * @throws \Microsoft\Graph\Exception\GraphException
+	 * @throws GraphException
 	 */
 	function unPublish($path){
 		$permissions=$this->getPermissions($path);

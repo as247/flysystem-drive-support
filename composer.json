@@ -13,7 +13,8 @@
   ],
   "require": {
     "php": ">=7.1",
-    "ext-json": "*"
+    "ext-json": "*",
+    "league/flysystem": "^1.0"
   },
   "autoload": {
     "psr-4": {
