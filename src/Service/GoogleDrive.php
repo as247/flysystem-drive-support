@@ -71,11 +71,14 @@ class GoogleDrive
 	protected $defaultParams;
 	protected $service;
 	protected $logger;
-	protected $logQuery=false;
 	public function __construct(Google_Service_Drive $service,$options=[])
 	{
 		$this->service=$service;
-		$this->logger=new Logger();
+		print_r($options);
+		$this->logger=new Logger($options['logging']['dir']??'');
+		if(isset($options['logging']['enable'])){
+            $this->logger->enable($options['logging']['enable']);
+        }
 		$this->options = array_replace_recursive(static::$defaultOptions, $options);
 		$this->publishPermission = $this->options['publishPermission'];
 
@@ -98,6 +101,7 @@ class GoogleDrive
 			$this->enableTeamDriveSupport();
 		}
 	}
+
 	public function isTeamDrive(){
 		return $this->options['teamDrive'];
 	}
@@ -194,7 +198,6 @@ class GoogleDrive
 	 * @return bool|Google_Service_Drive_DriveFile|RequestInterface
 	 */
 	public function dirCreate($name, $parentId){
-		$this->logger->log("Creating directory $name in $parentId");
 		$file = new Google_Service_Drive_DriveFile();
 		$file->setName($name);
 		$file->setParents([
@@ -214,7 +217,7 @@ class GoogleDrive
 		if($parent instanceof Google_Service_Drive_DriveFile){
 			$parent=$parent->getId();
 		}
-		$this->logger->log("Find $name{[$mineType]} in $parent ");
+		$timerStart=microtime(true);
 		$client=$this->service->getClient();
 		$client->setUseBatch(true);
 		$batch = $this->service->createBatch();
@@ -258,7 +261,8 @@ class GoogleDrive
 		}
 
 		$client->setUseBatch(false);
-		$this->logQuery('files.list.batch',['find for '.$name.' in '.$parent]);
+		$timerStop=microtime(true)-$timerStart;
+		$this->logQuery('files.list.batch',['query'=>'find for '.$name.' in '.$parent,'duration'=>$timerStop]);
 		$list=new Google_Service_Drive_FileList();
 		$list->setFiles($files);
 		return [$list,$isFullResult];
@@ -268,11 +272,16 @@ class GoogleDrive
 	 * @return Google_Service_Drive_FileList | RequestInterface
 	 */
 	public function filesListFiles($optParams = array()){
-		if(!$this->service->getClient()->shouldDefer()) {
-			$this->logQuery('files.list', func_get_args());
-		}
+        $timerStart=microtime(true);
 		$optParams=$this->getParams('files.list',['fields' => $this->fetchFieldsList],$optParams);
-		return $this->service->files->listFiles($optParams);
+		$result= $this->service->files->listFiles($optParams);
+        if(!$this->service->getClient()->shouldDefer()) {
+            $this->logQuery('files.list', [
+                'query'=>func_get_args(),
+                'duration'=>microtime(true)-$timerStart,
+                ]);
+        }
+		return $result;
 	}
 
 	/**
@@ -284,9 +293,15 @@ class GoogleDrive
 		if($fileId instanceof Google_Service_Drive_DriveFile){
 			$fileId=$fileId->getId();
 		}
-		$this->logQuery('files.get',func_get_args());
+        $timerStart=microtime(true);
+
 		$optParams=$this->getParams('files.get',['fields' => $this->fetchFieldsGet],$optParams);
-		return $this->service->files->get($fileId,$optParams);
+		$result= $this->service->files->get($fileId,$optParams);
+        $this->logQuery('files.get', [
+            'query'=>func_get_args(),
+            'duration'=>microtime(true)-$timerStart,
+        ]);
+        return $result;
 	}
 
 	/**
@@ -295,37 +310,59 @@ class GoogleDrive
 	 * @return Google_Service_Drive_DriveFile | RequestInterface
 	 */
 	public function filesCreate(Google_Service_Drive_DriveFile $postBody, $optParams = array()){
-		$this->logQuery('files.create',func_get_args());
+		$timerStart=microtime(true);
 		$optParams=$this->getParams('files.create',['fields' => $this->fetchFieldsGet],$optParams);
-		return $this->service->files->create($postBody,$optParams);
+		$result= $this->service->files->create($postBody,$optParams);
+        $this->logQuery('files.create', [
+            'query'=>func_get_args(),
+            'duration'=>microtime(true)-$timerStart,
+        ]);
+        return $result;
 	}
 
 	public function filesUpdate($fileId, Google_Service_Drive_DriveFile $postBody, $optParams = array()){
-		if($fileId instanceof Google_Service_Drive_DriveFile){
+        $timerStart=microtime(true);
+	    if($fileId instanceof Google_Service_Drive_DriveFile){
 			$fileId=$fileId->getId();
 		}
-		$this->logQuery('files.update',func_get_args());
 		$optParams=$this->getParams('files.update',['fields' => $this->fetchFieldsGet],$optParams);
-		return $this->service->files->update($fileId,$postBody,$optParams);
+		$result= $this->service->files->update($fileId,$postBody,$optParams);
+        $this->logQuery('files.update', [
+            'query'=>func_get_args(),
+            'duration'=>microtime(true)-$timerStart,
+        ]);
+        return $result;
 	}
 	public function filesCopy($fileId, Google_Service_Drive_DriveFile $postBody, $optParams = array()){
+	    $timerStart=microtime(true);
 		if($fileId instanceof Google_Service_Drive_DriveFile){
 			$fileId=$fileId->getId();
 		}
-		$this->logQuery('files.copy',func_get_args());
+
 		$optParams=$this->getParams('files.copy',['fields' => $this->fetchFieldsGet],$optParams);
-		return $this->service->files->copy($fileId,$postBody,$optParams);
+		$result= $this->service->files->copy($fileId,$postBody,$optParams);
+        $this->logQuery('files.copy', [
+            'query'=>func_get_args(),
+            'duration'=>microtime(true)-$timerStart,
+        ]);
+        return $result;
 	}
 	public function filesDelete($fileId, $optParams = array()){
+	    $timerStart=microtime(true);
 		if($fileId instanceof Google_Service_Drive_DriveFile){
 			$fileId=$fileId->getId();
 		}
-		$this->logQuery('files.delete',func_get_args());
 		$optParams=$this->getParams('files.delete',$optParams);
-		return $this->service->files->delete($fileId,$optParams);
+		$result = $this->service->files->delete($fileId,$optParams);
+        $this->logQuery('files.delete', [
+            'query'=>func_get_args(),
+            'duration'=>microtime(true)-$timerStart,
+        ]);
+        return $result;
 	}
 
 	public function filesRead($fileId){
+        $timerStart=microtime(true);
 		if($fileId instanceof Google_Service_Drive_DriveFile){
 			$fileId=$fileId->getId();
 		}
@@ -337,6 +374,10 @@ class GoogleDrive
 			$stream = $response->getBody()->detach();
 		}
 		$this->service->getClient()->setUseBatch(false);
+        $this->logQuery('files.read', [
+            'query'=>func_get_args(),
+            'duration'=>microtime(true)-$timerStart,
+        ]);
 		return $stream;
 	}
 
@@ -345,10 +386,10 @@ class GoogleDrive
 	 */
 	public function publish(Google_Service_Drive_DriveFile $file)
 	{
-
 		if ($this->getVisibility($file) === AdapterInterface::VISIBILITY_PUBLIC) {//already published
 			return;
 		}
+        $timerStart=microtime(true);
 		$permission = new Google_Service_Drive_Permission($this->publishPermission);
 		$optParams=$this->getParams('files.permission.create');
 		if ($newPermission=$this->service->permissions->create($file->getId(), $permission, $optParams)) {
@@ -356,7 +397,10 @@ class GoogleDrive
 			$permissions=array_merge($permissions,[$newPermission]);
 			$file->setPermissions($permissions);
 		}
-
+        $this->logQuery('files.permission.create', [
+            'query'=>$file->getId(),
+            'duration'=>microtime(true)-$timerStart,
+        ]);
 	}
 
 	/**
@@ -364,7 +408,7 @@ class GoogleDrive
 	 */
 	public function unPublish(Google_Service_Drive_DriveFile $file)
 	{
-
+        $timerStart=microtime(true);
 		$permissions = $file->getPermissions();
 		$optParams=$this->getParams('files.permission.delete');
 		foreach ($permissions as $index=> $permission) {
@@ -374,6 +418,10 @@ class GoogleDrive
 			}
 		}
 		$file->setPermissions($permissions);
+        $this->logQuery('files.permission.create', [
+            'query'=>$file->getId(),
+            'duration'=>microtime(true)-$timerStart,
+        ]);
 	}
 
 	public function filesUploadChunk(Google_Service_Drive_DriveFile $file,StreamInterface $contents,$chunk){
@@ -423,10 +471,14 @@ class GoogleDrive
 	}
 
 	protected function logQuery($cmd,$query){
-		if(!$this->logQuery){
-			return ;
-		}
 		$this->logger->query($cmd,$query);
 	}
+    public function getLogger(){
+        return $this->logger;
+    }
+    public function setLogger($logger){
+        $this->logger=$logger;
+        return $this;
+    }
 
 }

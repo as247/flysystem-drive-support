@@ -6,39 +6,35 @@ namespace As247\Flysystem\DriveSupport\Service;
 
 class Logger
 {
-	protected $queries=[];
-	function log($message, $level='debug'){
-		//echo $message.PHP_EOL;
-	}
-	public function requestStart(){
+	protected $logDir;
+	protected $enabled=false;
+	public function __construct($logDir='')
+    {
+        $this->logDir=$logDir;
+        if(is_dir($logDir)){
+            $this->enabled=true;
+        }
+    }
 
+    function log($message, $level='debug'){
+		$this->write("[$level] $message",'debug');
 	}
-	public function requestEnd(){
 
-	}
-	function query($cmd,$query){
-		$id=md5(json_encode($query));
-		if(!isset($this->queries['total'])){
-			$this->queries['total']=0;
-		}
-		$this->queries['total']++;
-		if(isset($this->queries['counts'][$cmd][$id])){
-			$this->queries['counts'][$cmd][$id]++;
-		}else{
-			$this->queries['counts'][$cmd][$id]=1;
-		}
-		$this->queries['queries'][$cmd][]=$query;
+	function query($cmd, $query){
+        $query=json_encode($query,JSON_PRETTY_PRINT);
+        $this->write("{$cmd} $query",'query');
 		return $this;
 	}
-	function getQuery($key){
-		return $this->queries[$key]??null;
-	}
-	public function showQueryLog($query='queries'){
-		if(!$query){
-			$show=$this->queries;
-		}else{
-			$show=isset($this->queries[$query])?$this->queries[$query]:null;
-		}
-		print_r($show);
-	}
+	protected function write($line,$file){
+	    if(!$this->enabled){
+	        return ;
+        }
+	    $time=date('Y-m-d h:i:s');
+	    file_put_contents($this->logDir."/$file.log",$time.' '.$line.PHP_EOL,FILE_APPEND);
+    }
+    public function enable($flag=true){
+	    $previous= $this->enabled;
+	    $this->enabled=$flag;
+	    return $previous;
+    }
 }
