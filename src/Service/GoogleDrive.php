@@ -113,7 +113,7 @@ class GoogleDrive
 		$result = [
 			'id'=>$id,
 			'name' => $object->getName(),
-			StorageAttributes::ATTRIBUTE_PATH => is_string($path)?'/'.ltrim($path,'\/'):null,
+			StorageAttributes::ATTRIBUTE_PATH => is_string($path)? ltrim($path,'\/'):null,
 			StorageAttributes::ATTRIBUTE_TYPE => $object->mimeType === self::DIRMIME ? StorageAttributes::TYPE_DIRECTORY : StorageAttributes::TYPE_FILE,
 			StorageAttributes::ATTRIBUTE_LAST_MODIFIED=>strtotime($object->getModifiedTime())
 		];

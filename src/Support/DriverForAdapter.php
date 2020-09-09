@@ -107,9 +107,9 @@ trait DriverForAdapter
 	 */
 	public function delete($path)
 	{
-		if($this->applyPathPrefix($path) === $this->applyPathPrefix('')){
-			return false;
-		}
+		if($this->isRootPath($path)){
+		    return false;
+        }
 		try {
 			$this->driver->delete($this->applyPathPrefix($path));
 			return true;
@@ -125,9 +125,9 @@ trait DriverForAdapter
 	 */
 	public function deleteDir($dirname)
 	{
-		if($this->applyPathPrefix($dirname) === $this->applyPathPrefix('')){
-			return false;
-		}
+        if($this->isRootPath($dirname)){
+            return false;
+        }
 		try {
 			$this->driver->deleteDirectory($this->applyPathPrefix($dirname));
 			return true;
@@ -245,4 +245,16 @@ trait DriverForAdapter
 	{
 		return $this->getMetadata($path);
 	}
+
+    public function applyPathPrefix($path)
+    {
+        return Path::clean(parent::applyPathPrefix($path));
+    }
+
+    protected function isRootPath($path){
+        if ($this->applyPathPrefix($path) === $this->applyPathPrefix('')) {
+            return true;
+        }
+        return false;
+    }
 }

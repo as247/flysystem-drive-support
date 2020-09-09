@@ -45,7 +45,7 @@ class OneDrive
 		return [
 			'id'=>$response['id']??null,
 			'name' => $response['name']??null,
-			StorageAttributes::ATTRIBUTE_PATH => Path::clean($path),
+			StorageAttributes::ATTRIBUTE_PATH => ltrim($path,'\/'),
 			StorageAttributes::ATTRIBUTE_LAST_MODIFIED => strtotime($response['lastModifiedDateTime']),
 			StorageAttributes::ATTRIBUTE_FILE_SIZE => $response['size'],
 			StorageAttributes::ATTRIBUTE_TYPE => isset($response['file']) ? 'file' : 'dir',
