@@ -71,7 +71,13 @@ class OneDriveOauth
 		return json_decode($response->getBody(), true);
 	}
 
-	function getAccessToken()
+	/**
+	 * Fetch new access token or return existing one
+	 * @param int $minLifetime If token life time smaller this value then it will fetch new token
+	 * 			eg. current token expires in 50 sec, but we need 60, then it fetch new token
+	 * @return mixed
+	 */
+	function getAccessToken($minLifetime = 600)
 	{
 		$key = $this->clientId . $this->clientSecret . $this->refreshToken;
 		$token = $this->getCache()->get($key);
@@ -81,13 +87,11 @@ class OneDriveOauth
 			$token['refresh_token'] = $this->refreshToken;
 		}
 
-		$renewAt = 600;
 		$token_created_at = isset($token['created_at']) ? $token['created_at'] : 0;
 		$token_expired_in = isset($token['expires_in']) ? $token['expires_in'] : 0;
 		$willBeExpireIn = $token_expired_in + $token_created_at - time();
 
-
-		if (empty($token['access_token']) || $willBeExpireIn <= $renewAt) {
+		if (empty($token['access_token']) || $willBeExpireIn <= $minLifetime) {
 			$token = $this->fetchAccessTokenWithRefreshToken($this->refreshToken);
 
 			$token['created_at'] = time();
