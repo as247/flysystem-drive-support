@@ -22,7 +22,7 @@ trait DriverForAdapter
 	 * @var Driver
 	 */
 	protected $driver;
-
+	protected $throwException=false;
 	public function getDriver(){
 		return $this->driver;
 	}
@@ -36,6 +36,9 @@ trait DriverForAdapter
 			$this->driver->write($this->applyPathPrefix($path), $contents, $config);
 			return $this->getMetadata($path);
 		}catch (UnableToWriteFile $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}
 	}
@@ -49,8 +52,14 @@ trait DriverForAdapter
 			$this->driver->writeStream($this->applyPathPrefix($path), $resource, $config);
 			return $this->getMetadata($path);
 		}catch (UnableToWriteFile $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}catch (InvalidStreamProvided $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}
 	}
@@ -82,6 +91,9 @@ trait DriverForAdapter
 			$this->driver->move($path, $newpath, new Config());
 			return true;
 		}catch (UnableToMoveFile $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}
 	}
@@ -96,8 +108,10 @@ trait DriverForAdapter
 			$newpath=$this->applyPathPrefix($newpath);
 			$this->driver->copy($path, $newpath, new Config());
 			return true;
-		}catch (UnableToCopyFile $exception){
-			echo $exception->getMessage();
+		}catch (UnableToCopyFile $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}
 	}
@@ -114,8 +128,14 @@ trait DriverForAdapter
 			$this->driver->delete($this->applyPathPrefix($path));
 			return true;
 		}catch (UnableToDeleteFile $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}catch (FileNotFoundException $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}
 	}
@@ -132,8 +152,14 @@ trait DriverForAdapter
 			$this->driver->deleteDirectory($this->applyPathPrefix($dirname));
 			return true;
 		}catch (UnableToDeleteDirectory $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}catch (FileNotFoundException $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}
 	}
@@ -147,6 +173,9 @@ trait DriverForAdapter
 			$this->driver->createDirectory($this->applyPathPrefix($dirname), $config);
 			return $this->getMetadata($dirname);
 		}catch (UnableToCreateDirectory $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}
 	}
@@ -184,6 +213,9 @@ trait DriverForAdapter
 		try {
 			return ['stream'=>$this->driver->readStream($this->applyPathPrefix($path))];
 		}catch (UnableToReadFile $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}
 	}
@@ -210,6 +242,9 @@ trait DriverForAdapter
 			$meta = $this->driver->getMetadata($this->applyPathPrefix($path));
 			return $meta->toArrayV1();
 		}catch (FileNotFoundException $e){
+			if($this->throwException){
+				throw $e;
+			}
 			return false;
 		}
 	}

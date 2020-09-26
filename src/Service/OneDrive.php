@@ -25,9 +25,14 @@ class OneDrive
 		'withLink' => true
 	];
 	protected $options;
+	use HasLogger;
 	public function __construct(Graph $graph,$options=[])
 	{
 		$this->options=$options;
+		$this->logger=new Logger($options['logging']['dir']??'');
+		if(isset($options['logging']['enable'])){
+			$this->logger->enable($options['logging']['enable']);
+		}
 	    $this->graph=$graph;
 	}
 
