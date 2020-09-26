@@ -9,7 +9,29 @@ use LogicException;
 
 class Path
 {
-	public static function clean($path,$return='string'){
+	/**
+	 * Clean the path
+	 * ./a/b/d/..//c.txt will return /a/b/c.txt
+	 * @param $path
+	 * @return string
+	 */
+	public static function clean($path){
+		return static::cleanPath($path);
+	}
+	public static function countSegments($path){
+		return static::cleanPath($path,'count');
+	}
+
+	/**
+	 * Explode path
+	 * /a/b/c.txt will return ['/','a','b','c.txt']
+	 * @param $path
+	 * @return array
+	 */
+	public static function explode($path){
+		return static::cleanPath($path,'array');
+	}
+	protected static function cleanPath($path,$return='string'){
         if(is_array($path)){
             $path=join('/',$path);
         }
@@ -30,9 +52,7 @@ class Path
 		}
 		return $subject;
 	}
-	public static function countSegments($path){
-		return static::clean($path,'count');
-	}
+
 
     /**
      * Normalize relative directories in a path.
