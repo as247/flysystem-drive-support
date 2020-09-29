@@ -14,6 +14,7 @@ use As247\CloudStorages\Exception\UnableToDeleteFile;
 use As247\CloudStorages\Exception\UnableToMoveFile;
 use As247\CloudStorages\Exception\UnableToReadFile;
 use As247\CloudStorages\Exception\UnableToWriteFile;
+use League\Flysystem\Util;
 use function GuzzleHttp\Psr7\stream_for;
 use League\Flysystem\Config;
 
@@ -227,7 +228,9 @@ trait StorageToAdapter
 	 */
 	public function listContents($directory = '', $recursive = false)
 	{
+
 		$contents=array_values(iterator_to_array($this->storage->listContents($this->applyPathPrefix($directory),$recursive),false));
+
 		$contents=array_map(function ($v){
 			$v['path']=$this->removePathPrefix($v['path']);
 			return $v;
@@ -285,7 +288,7 @@ trait StorageToAdapter
 
     public function applyPathPrefix($path)
     {
-        return parent::applyPathPrefix($path);
+        return Util::normalizePath(parent::applyPathPrefix($path));
     }
 
     protected function isRootPath($path){
