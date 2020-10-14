@@ -317,6 +317,9 @@ trait StorageToAdapter
 
 	protected function shouldThrowException($e)
 	{
+		if(!$this->throwException){
+			return false;
+		}
 		if (empty($this->exceptExceptions)) {
 			return $this->throwException;
 		}
