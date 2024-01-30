@@ -17,7 +17,7 @@ use As247\CloudStorages\Exception\UnableToWriteFile;
 use As247\CloudStorages\Storage\GoogleDrive;
 use As247\CloudStorages\Storage\OneDrive;
 use League\Flysystem\Util;
-use function GuzzleHttp\Psr7\stream_for;
+use GuzzleHttp\Psr7\Utils;
 use League\Flysystem\Config;
 
 
@@ -45,7 +45,7 @@ trait StorageToAdapter
 	 */
 	public function write($path, $contents, Config $config = null)
 	{
-		return $this->writeStream($path, stream_for($contents), $config);
+		return $this->writeStream($path, Utils::streamFor($contents), $config);
 	}
 
 	/**
