@@ -16,9 +16,11 @@ use As247\CloudStorages\Exception\UnableToReadFile;
 use As247\CloudStorages\Exception\UnableToWriteFile;
 use As247\CloudStorages\Storage\GoogleDrive;
 use As247\CloudStorages\Storage\OneDrive;
-use League\Flysystem\Util;
+use As247\CloudStorages\Support\StorageAttributes;
 use GuzzleHttp\Psr7\Utils;
 use League\Flysystem\Config;
+use League\Flysystem\DirectoryAttributes;
+use League\Flysystem\FileAttributes;
 
 
 trait StorageToAdapter
@@ -40,209 +42,169 @@ trait StorageToAdapter
 		return $this->storage;
 	}
 
-	/**
-	 * @inheritDoc
-	 */
-	public function write($path, $contents, Config $config = null)
-	{
-		return $this->writeStream($path, Utils::streamFor($contents), $config);
-	}
+    public function fileExists(string $path): bool
+    {
+        return (bool)$this->getMetadata($path);
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function writeStream($path, $resource, Config $config)
-	{
-		try {
-			$config = $this->convertConfig($config);
-			$this->storage->writeStream($this->applyPathPrefix($path), $resource, $config);
-			return $this->getMetadata($path);
-		} catch (UnableToWriteFile $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		} catch (InvalidStreamProvided $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		}
-	}
+    public function write(string $path, string $contents, Config $config): void
+    {
+        $this->writeStream($path, Utils::streamFor($contents), $config);
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function update($path, $contents, Config $config)
-	{
-		return $this->write($path, $contents, $config);
-	}
+    public function writeStream(string $path, $contents, Config $config): void
+    {
+        try {
+            $config = $this->convertConfig($config);
+            $this->storage->writeStream($this->prefixer->prefixPath($path), $contents, $config);
+        } catch (UnableToWriteFile $e) {
+            if ($this->shouldThrowException($e)) {
+                throw $e;
+            }
+        } catch (InvalidStreamProvided $e) {
+            if ($this->shouldThrowException($e)) {
+                throw $e;
+            }
+        }
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function updateStream($path, $resource, Config $config)
-	{
-		return $this->writeStream($path, $resource, $config);
-	}
+    public function read(string $path): string
+    {
+        return stream_get_contents($this->readStream($path));
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function rename($path, $newpath)
-	{
-		try {
-			$path = $this->applyPathPrefix($path);
-			$newpath = $this->applyPathPrefix($newpath);
-			$this->storage->move($path, $newpath, $this->convertConfig(new Config()));
-			return true;
-		} catch (UnableToMoveFile $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		}
-	}
+    public function readStream(string $path)
+    {
+        try {
+            return $this->storage->readStream($this->prefixer->prefixPath($path));
+        } catch (UnableToReadFile $e) {
+            if ($this->shouldThrowException($e)) {
+                throw $e;
+            }
+        }
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function copy($path, $newpath)
-	{
-		try {
-			$config = $this->convertConfig(new Config());
-			$path = $this->applyPathPrefix($path);
-			$newpath = $this->applyPathPrefix($newpath);
-			$this->storage->copy($path, $newpath, $config);
-			return true;
-		} catch (UnableToCopyFile $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		}
-	}
+    public function delete(string $path): void
+    {
+        if ($this->isRootPath($path)) {
+            return ;
+        }
+        try {
+            $this->storage->delete($this->prefixer->prefixPath($path));
 
-	/**
-	 * @inheritDoc
-	 */
-	public function delete($path)
-	{
-		if ($this->isRootPath($path)) {
-			return false;
-		}
-		try {
-			$this->storage->delete($this->applyPathPrefix($path));
-			return true;
-		} catch (UnableToDeleteFile $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		} catch (FileNotFoundException $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		}
-	}
+        } catch (UnableToDeleteFile $e) {
+            if ($this->shouldThrowException($e)) {
+                throw $e;
+            }
+        } catch (FileNotFoundException $e) {
+            if ($this->shouldThrowException($e)) {
+                throw $e;
+            }
+        }
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function deleteDir($dirname)
-	{
-		if ($this->isRootPath($dirname)) {
-			return false;
-		}
-		try {
-			$this->storage->deleteDirectory($this->applyPathPrefix($dirname));
-			return true;
-		} catch (UnableToDeleteDirectory $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		} catch (FileNotFoundException $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		}
-	}
+    public function deleteDirectory(string $path): void
+    {
+        if ($this->isRootPath($path)) {
+            return ;
+        }
+        try {
+            $this->storage->deleteDirectory($this->prefixer->prefixPath($path));
+        } catch (UnableToDeleteDirectory $e) {
+            if ($this->shouldThrowException($e)) {
+                throw $e;
+            }
+        } catch (FileNotFoundException $e) {
+            if ($this->shouldThrowException($e)) {
+                throw $e;
+            }
+        }
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function createDir($dirname, Config $config)
-	{
-		try {
-			$config = $this->convertConfig($config);
-			$this->storage->createDirectory($this->applyPathPrefix($dirname), $config);
-			return $this->getMetadata($dirname);
-		} catch (UnableToCreateDirectory $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		}
-	}
+    public function createDirectory(string $path, Config $config): void
+    {
+        try {
+            $config = $this->convertConfig($config);
+            $this->storage->createDirectory($this->prefixer->prefixPath($path), $config);
 
-	/**
-	 * @inheritDoc
-	 */
-	public function setVisibility($path, $visibility)
-	{
-		$this->storage->setVisibility($this->applyPathPrefix($path), $visibility);
-		return $this->getMetadata($path);
-	}
+        } catch (UnableToCreateDirectory $e) {
+            if ($this->shouldThrowException($e)) {
+                throw $e;
+            }
+        }
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function has($path)
-	{
-		return (bool)$this->getMetadata($path);
-	}
+    public function setVisibility(string $path, string $visibility): void
+    {
+        $this->storage->setVisibility($this->prefixer->prefixPath($path), $visibility);
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function read($path)
-	{
-		$stream = $this->readStream($path);
-		return ['contents' => stream_get_contents($stream['stream'])];
-	}
+    public function visibility(string $path): FileAttributes
+    {
+        return $this->getMetadata($path);
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function readStream($path)
-	{
-		try {
-			return ['stream' => $this->storage->readStream($this->applyPathPrefix($path))];
-		} catch (UnableToReadFile $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		}
-	}
+    public function mimeType(string $path): FileAttributes
+    {
+        return $this->getMetadata($path);
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function listContents($directory = '', $recursive = false)
-	{
+    public function lastModified(string $path): FileAttributes
+    {
+        return $this->getMetadata($path);
+    }
 
-		$contents = array_values(iterator_to_array($this->storage->listContents($this->applyPathPrefix($directory), $recursive), false));
+    public function fileSize(string $path): FileAttributes
+    {
+        return $this->getMetadata($path);
+    }
 
-		$contents = array_map(function ($v) {
-			$v['path'] = $this->removePathPrefix($v['path']);
-			return $v;
-		}, $contents);
-		return $contents;
-	}
+    public function listContents(string $path, bool $deep): iterable
+    {
+        $contents=$this->storage->listContents($this->prefixer->prefixPath($path), $deep);
+        foreach ($contents as $key=>$content){
+            $path=$this->prefixer->stripPrefix($content['path']);
+            $visibility=$content[StorageAttributes::ATTRIBUTE_VISIBILITY];
+            $lastModified=$content[StorageAttributes::ATTRIBUTE_LAST_MODIFIED];
+            $fileSize=$content[StorageAttributes::ATTRIBUTE_FILE_SIZE];
+            $isDirectory=$content[StorageAttributes::ATTRIBUTE_TYPE]===StorageAttributes::TYPE_DIRECTORY;
+            yield $isDirectory ?
+                new DirectoryAttributes($path, $visibility, $lastModified) :
+                new FileAttributes(
+                str_replace('\\', '/', $path),
+                    $fileSize,
+                $visibility,
+                $lastModified
+            );
+        }
+    }
+
+    public function move(string $source, string $destination, Config $config): void
+    {
+        try {
+            $source = $this->prefixer->prefixPath($source);
+            $destination = $this->prefixer->prefixPath($destination);
+            $this->storage->move($source, $destination, $this->convertConfig(new Config()));
+        } catch (UnableToMoveFile $e) {
+            if ($this->shouldThrowException($e)) {
+                throw $e;
+            }
+        }
+    }
+
+    public function copy(string $source, string $destination, Config $config): void
+    {
+        try {
+            $config = $this->convertConfig(new Config());
+            $source = $this->prefixer->prefixPath($source);
+            $destination = $this->prefixer->prefixPath($destination);
+            $this->storage->copy($source, $destination, $config);
+        } catch (UnableToCopyFile $e) {
+            if ($this->shouldThrowException($e)) {
+                throw $e;
+            }
+        }
+    }
 
 	/**
 	 * @inheritDoc
@@ -250,8 +212,15 @@ trait StorageToAdapter
 	public function getMetadata($path)
 	{
 		try {
-			$meta = $this->storage->getMetadata($this->applyPathPrefix($path));
-			return $meta->toArrayV1();
+			$meta = $this->storage->getMetadata($this->prefixer->prefixPath($path));
+            return $meta->type()===StorageAttributes::TYPE_DIRECTORY ?
+                new DirectoryAttributes($path, $meta->visibility(), $meta->lastModified()) :
+                new FileAttributes(
+                str_replace('\\', '/', $path),
+                $meta->fileSize(),
+                $meta->visibility(),
+                $meta->lastModified()
+            );
 		} catch (FileNotFoundException $e) {
 			if ($this->shouldThrowException($e)) {
 				throw $e;
@@ -259,52 +228,9 @@ trait StorageToAdapter
 			return false;
 		}
 	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function getSize($path)
-	{
-		return $this->getMetadata($path);
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function getMimetype($path)
-	{
-		return $this->getMetadata($path);
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function getTimestamp($path)
-	{
-		return $this->getMetadata($path);
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function getVisibility($path)
-	{
-		return $this->getMetadata($path);
-	}
-
-	public function setPathPrefix($path)
-	{
-		parent::setPathPrefix(Util::normalizePath($path));
-	}
-
-	public function applyPathPrefix($path)
-	{
-		return Util::normalizePath(parent::applyPathPrefix($path));
-	}
-
 	protected function isRootPath($path)
 	{
-		if ($this->applyPathPrefix($path) === $this->applyPathPrefix('')) {
+		if ($this->prefixer->prefixPath($path) === $this->prefixer->prefixPath('')) {
 			return true;
 		}
 		return false;
