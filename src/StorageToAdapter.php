@@ -310,7 +310,7 @@ trait StorageToAdapter
 		return false;
 	}
 
-	protected function convertConfig(Config $config)
+	protected function convertConfig(Config $config=null)
 	{
 		return new \As247\CloudStorages\Support\Config();
 	}
