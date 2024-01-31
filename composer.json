@@ -13,9 +13,7 @@
   ],
   "require": {
     "php": ">=7.1",
-    "ext-json": "*",
-    "league/flysystem": "^1.0",
-    "as247/cloud-storages": "^1.0"
+    "ext-json": "*"
   },
   "autoload": {
     "psr-4": {
