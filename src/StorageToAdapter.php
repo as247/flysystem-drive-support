@@ -5,15 +5,7 @@ namespace As247\Flysystem\DriveSupport;
 
 
 use As247\CloudStorages\Contracts\Storage\StorageContract;
-use As247\CloudStorages\Exception\FileNotFoundException;
-use As247\CloudStorages\Exception\InvalidStreamProvided;
-use As247\CloudStorages\Exception\UnableToCopyFile;
-use As247\CloudStorages\Exception\UnableToCreateDirectory;
-use As247\CloudStorages\Exception\UnableToDeleteDirectory;
-use As247\CloudStorages\Exception\UnableToDeleteFile;
-use As247\CloudStorages\Exception\UnableToMoveFile;
-use As247\CloudStorages\Exception\UnableToReadFile;
-use As247\CloudStorages\Exception\UnableToWriteFile;
+use As247\CloudStorages\Storage\AList;
 use As247\CloudStorages\Storage\GoogleDrive;
 use As247\CloudStorages\Storage\OneDrive;
 use As247\CloudStorages\Support\StorageAttributes;
@@ -21,6 +13,8 @@ use GuzzleHttp\Psr7\Utils;
 use League\Flysystem\Config;
 use League\Flysystem\DirectoryAttributes;
 use League\Flysystem\FileAttributes;
+use League\Flysystem\UnableToRetrieveMetadata;
+use League\Flysystem\UnableToWriteFile;
 
 
 trait StorageToAdapter
@@ -29,13 +23,9 @@ trait StorageToAdapter
 	 * @var StorageContract
 	 */
 	protected $storage;
-	protected $throwException = false;
-	protected $exceptExceptions = [
-		FileNotFoundException::class,
-	];
 
 	/**
-	 * @return StorageContract|OneDrive|GoogleDrive
+	 * @return StorageContract|OneDrive|GoogleDrive|AList
 	 */
 	public function getStorage()
 	{
@@ -44,7 +34,20 @@ trait StorageToAdapter
 
     public function fileExists(string $path): bool
     {
-        return (bool)$this->getMetadata($path);
+        try {
+            return $this->getMetadata($path) instanceof FileAttributes;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    public function directoryExists(string $path): bool
+    {
+        try {
+            return $this->getMetadata($path) instanceof DirectoryAttributes;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     public function write(string $path, string $contents, Config $config): void
@@ -57,14 +60,8 @@ trait StorageToAdapter
         try {
             $config = $this->convertConfig($config);
             $this->storage->writeStream($this->prefixer->prefixPath($path), $contents, $config);
-        } catch (UnableToWriteFile $e) {
-            if ($this->shouldThrowException($e)) {
-                throw $e;
-            }
-        } catch (InvalidStreamProvided $e) {
-            if ($this->shouldThrowException($e)) {
-                throw $e;
-            }
+        }catch (\Exception $e){
+            throw UnableToWriteFile::atLocation($path, $e->getMessage());
         }
     }
 
@@ -77,10 +74,8 @@ trait StorageToAdapter
     {
         try {
             return $this->storage->readStream($this->prefixer->prefixPath($path));
-        } catch (UnableToReadFile $e) {
-            if ($this->shouldThrowException($e)) {
-                throw $e;
-            }
+        } catch (\Exception $e) {
+            throw \League\Flysystem\UnableToReadFile::fromLocation($path, $e);
         }
     }
 
@@ -92,14 +87,8 @@ trait StorageToAdapter
         try {
             $this->storage->delete($this->prefixer->prefixPath($path));
 
-        } catch (UnableToDeleteFile $e) {
-            if ($this->shouldThrowException($e)) {
-                throw $e;
-            }
-        } catch (FileNotFoundException $e) {
-            if ($this->shouldThrowException($e)) {
-                throw $e;
-            }
+        } catch (\Exception $e) {
+            throw \League\Flysystem\UnableToDeleteFile::atLocation($path, $e->getMessage());
         }
     }
 
@@ -110,14 +99,8 @@ trait StorageToAdapter
         }
         try {
             $this->storage->deleteDirectory($this->prefixer->prefixPath($path));
-        } catch (UnableToDeleteDirectory $e) {
-            if ($this->shouldThrowException($e)) {
-                throw $e;
-            }
-        } catch (FileNotFoundException $e) {
-            if ($this->shouldThrowException($e)) {
-                throw $e;
-            }
+        } catch(\Exception $e){
+            throw \League\Flysystem\UnableToDeleteDirectory::atLocation($path, $e->getMessage());
         }
     }
 
@@ -126,17 +109,18 @@ trait StorageToAdapter
         try {
             $config = $this->convertConfig($config);
             $this->storage->createDirectory($this->prefixer->prefixPath($path), $config);
-
-        } catch (UnableToCreateDirectory $e) {
-            if ($this->shouldThrowException($e)) {
-                throw $e;
-            }
+        } catch (\Exception $e) {
+            throw \League\Flysystem\UnableToCreateDirectory::atLocation($path, $e->getMessage());
         }
     }
 
     public function setVisibility(string $path, string $visibility): void
     {
-        $this->storage->setVisibility($this->prefixer->prefixPath($path), $visibility);
+        try {
+            $this->storage->setVisibility($this->prefixer->prefixPath($path), $visibility);
+        }catch (\Exception $e){
+            throw new \League\Flysystem\UnableToSetVisibility($path, 0, $e);
+        }
     }
 
     public function visibility(string $path): FileAttributes
@@ -146,7 +130,14 @@ trait StorageToAdapter
 
     public function mimeType(string $path): FileAttributes
     {
-        return $this->getMetadata($path);
+        $meta=$this->getMetadata($path);
+        if($meta instanceof FileAttributes){
+            if($meta->mimeType()) {
+                //print_r($meta);
+                return $meta;
+            }
+        }
+        throw UnableToRetrieveMetadata::create($path, 'mimeType');
     }
 
     public function lastModified(string $path): FileAttributes
@@ -156,7 +147,11 @@ trait StorageToAdapter
 
     public function fileSize(string $path): FileAttributes
     {
-        return $this->getMetadata($path);
+        $meta= $this->getMetadata($path);
+        if($meta instanceof FileAttributes){
+            return $meta;
+        }
+        throw UnableToRetrieveMetadata::create($path, 'fileSize');
     }
 
     public function listContents(string $path, bool $deep): iterable
@@ -185,10 +180,8 @@ trait StorageToAdapter
             $source = $this->prefixer->prefixPath($source);
             $destination = $this->prefixer->prefixPath($destination);
             $this->storage->move($source, $destination, $this->convertConfig(new Config()));
-        } catch (UnableToMoveFile $e) {
-            if ($this->shouldThrowException($e)) {
-                throw $e;
-            }
+        } catch (\Exception $e) {
+            throw \League\Flysystem\UnableToMoveFile::fromLocationTo($source, $destination, $e);
         }
     }
 
@@ -199,15 +192,14 @@ trait StorageToAdapter
             $source = $this->prefixer->prefixPath($source);
             $destination = $this->prefixer->prefixPath($destination);
             $this->storage->copy($source, $destination, $config);
-        } catch (UnableToCopyFile $e) {
-            if ($this->shouldThrowException($e)) {
-                throw $e;
-            }
+        } catch (\Exception $e) {
+            throw \League\Flysystem\UnableToCopyFile::fromLocationTo($source, $destination, $e);
         }
     }
 
 	/**
-	 * @inheritDoc
+	 * @param $path
+     * @return FileAttributes|DirectoryAttributes|bool
 	 */
 	public function getMetadata($path)
 	{
@@ -219,15 +211,22 @@ trait StorageToAdapter
                 str_replace('\\', '/', $path),
                 $meta->fileSize(),
                 $meta->visibility(),
-                $meta->lastModified()
+                $meta->lastModified(),
+                $meta->mimeType()
             );
-		} catch (FileNotFoundException $e) {
-			if ($this->shouldThrowException($e)) {
-				throw $e;
-			}
-			return false;
-		}
-	}
+		}  catch (\Exception $e) {
+            throw new UnableToRetrieveMetadata("Unable to retrieve metadata for file at path: {$path}", 0, $e);
+        }
+    }
+
+    public function temporaryUrl(string $path, \DateTimeInterface $expiresAt, Config $config): string
+    {
+        try {
+            return $this->storage->temporaryUrl($this->prefixer->prefixPath($path), $expiresAt, $this->convertConfig($config));
+        } catch (\Exception $e) {
+            throw new \League\Flysystem\UnableToRetrieveMetadata("Unable to retrieve metadata for file at path: {$path}", 0, $e);
+        }
+    }
 	protected function isRootPath($path)
 	{
 		if ($this->prefixer->prefixPath($path) === $this->prefixer->prefixPath('')) {
